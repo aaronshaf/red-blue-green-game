@@ -1,0 +1,8 @@
+.Red {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 10px;
+  background-color: red;
+  transition: transform 0.05s linear;
+}

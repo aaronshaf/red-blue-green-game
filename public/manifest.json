@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "red-blue-green",
+  "name": "red-blue-green (game)",
   "icons": [
     {
       "src": "favicon.ico",

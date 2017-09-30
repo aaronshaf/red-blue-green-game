@@ -1,0 +1,8 @@
+.Blue {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 10px;
+  background-color: blue;
+  transition: transform 0.05s linear;
+}
