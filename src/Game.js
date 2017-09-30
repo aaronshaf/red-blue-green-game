@@ -196,13 +196,13 @@ export default class Game extends React.Component<{}, State> {
       const input = [
         // normalizeVelocity(redVelocity), // red velocity
         // normalizeVelocity(blue.velocity), // blue velocity
-        // blue.angle // blue angle
+        blue.angle, // blue angle
         normalizeAngle(angleToBlue)
         // normalizeDistance(this.state.width, this.state.height, distance)
       ]
       const result = this.network.activate(input)
       const redAngle = denormalizeAngle(result[0])
-      console.debug(`${normalizeAngle(angleToBlue)} -> ${result[0]}`)
+      // console.debug(`${normalizeAngle(angleToBlue)} -> ${result[0]}`)
 
       const newRed = {
         id: uuid.v1(),
@@ -229,23 +229,23 @@ export default class Game extends React.Component<{}, State> {
           green.originalBlue.positionX,
           green.originalBlue.positionY
         )
-        console.debug(
-          `--- ${normalizeAngle(green.angle)} -> ${normalizeAngle(green.angle)}`
-        )
+        // console.debug(
+        //   `--- ${normalizeAngle(green.angle)} -> ${normalizeAngle(green.angle)}`
+        // )
         return {
           input: [
             // normalizeVelocity(green.velocity), // green velocity
             // normalizeVelocity(green.originalBlue.velocity), // blue velocity
-            // green.originalBlue.angle
-            normalizeAngle(green.angle),
-            normalizeDistance(this.state.width, this.state.height, distance)
+            green.originalBlue.angle,
+            normalizeAngle(green.angle)
+            // normalizeDistance(this.state.width, this.state.height, distance)
           ],
           output: [normalizeAngle(green.angle)]
         }
       })
     if (trainingSet.length > 0) {
       this.network.evolve(trainingSet, {
-        iterations: 2000,
+        // iterations: 2000,
         // population: 20,
         // elitism: 20,
         error: 0.05
@@ -305,7 +305,7 @@ export default class Game extends React.Component<{}, State> {
 
   handleSaveNetwork = () => {
     const json = JSON.stringify(this.network.toJSON())
-    console.debug(json.length)
+    // console.debug(json.length)
     window.localStorage.network = json
   }
 
