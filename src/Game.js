@@ -237,17 +237,18 @@ export default class Game extends React.Component<{}, State> {
             // normalizeVelocity(green.velocity), // green velocity
             // normalizeVelocity(green.originalBlue.velocity), // blue velocity
             // green.originalBlue.angle
-            normalizeAngle(green.angle)
-            // normalizeDistance(this.state.width, this.state.height, distance)
+            normalizeAngle(green.angle),
+            normalizeDistance(this.state.width, this.state.height, distance)
           ],
           output: [normalizeAngle(green.angle)]
         }
       })
     if (trainingSet.length > 0) {
       this.network.evolve(trainingSet, {
-        population: 20,
+        iterations: 2000,
+        // population: 20,
         // elitism: 20,
-        error: 0.2
+        error: 0.05
       })
     }
     const greens = this.state.greens
@@ -357,5 +358,5 @@ export default class Game extends React.Component<{}, State> {
 }
 
 function createNetwork() {
-  return neataptic.architect.Random(1, 2, 1)
+  return neataptic.architect.Random(2, 4, 1)
 }
