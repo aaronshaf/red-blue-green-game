@@ -2,6 +2,7 @@
 
 import React from 'react'
 import clamp from 'lodash/clamp'
+import round from 'lodash/round'
 import Blue from './Blue'
 import Green from './Green'
 import Red from './Red'
@@ -19,12 +20,21 @@ import {
   normalizeDistance,
   normalizeVelocity
 } from './utils'
-import { INTERVAL, MIN_SPEED, MAX_SPEED } from './constants'
+import {
+  INTERVAL,
+  MIN_SPEED,
+  MAX_SPEED,
+  MAX_BLUE_SPEED,
+  MAX_RED_SPEED
+} from './constants'
 import type { UIEvent, Piece, GreenPiece } from './types'
 import './Game.css'
 
+const AsyncComponent = React.unstable_AsyncComponent
+
 type State = {|
   blue: Piece,
+  errorRate: number,
   greens: Array<GreenPiece>,
   height: number,
   isTraining: boolean,
@@ -38,12 +48,14 @@ export default class Game extends React.Component<{}, State> {
   network: any
   interval: number
   div: HTMLElement
+  trainingSet: Array<any>
 
   constructor() {
     super()
     const width = 32
     const height = 32
     this.network = createNetwork()
+    this.trainingSet = []
     this.state = {
       blue: {
         velocity: 0.5,
@@ -51,6 +63,7 @@ export default class Game extends React.Component<{}, State> {
         positionX: Math.floor(width / 4),
         positionY: Math.floor(height / 2)
       },
+      errorRate: 0,
       greens: [],
       height,
       isTraining: true,
@@ -145,7 +158,7 @@ export default class Game extends React.Component<{}, State> {
       blue = {
         ...this.state.blue,
         angle: Math.random() * (2 * Math.PI) - Math.PI,
-        velocity: Math.random() * MAX_SPEED
+        velocity: Math.random() * MAX_BLUE_SPEED
       }
     } else {
       blue = {
@@ -191,14 +204,14 @@ export default class Game extends React.Component<{}, State> {
         blue.positionX,
         blue.positionY
       )
-      const redVelocity = Math.max(MIN_SPEED, Math.random() * MAX_SPEED)
+      const redVelocity = Math.max(MIN_SPEED, Math.random() * MAX_RED_SPEED)
 
       const input = [
         // normalizeVelocity(redVelocity), // red velocity
         // normalizeVelocity(blue.velocity), // blue velocity
-        blue.angle, // blue angle
-        normalizeAngle(angleToBlue)
-        // normalizeDistance(this.state.width, this.state.height, distance)
+        normalizeAngle(blue.angle), // blue angle
+        normalizeAngle(angleToBlue),
+        normalizeDistance(this.state.width, this.state.height, distance)
       ]
       const result = this.network.activate(input)
       const redAngle = denormalizeAngle(result[0])
@@ -236,21 +249,36 @@ export default class Game extends React.Component<{}, State> {
           input: [
             // normalizeVelocity(green.velocity), // green velocity
             // normalizeVelocity(green.originalBlue.velocity), // blue velocity
-            green.originalBlue.angle,
-            normalizeAngle(green.angle)
-            // normalizeDistance(this.state.width, this.state.height, distance)
+            normalizeAngle(green.originalBlue.angle),
+            normalizeAngle(green.angle),
+            normalizeDistance(this.state.width, this.state.height, distance)
           ],
           output: [normalizeAngle(green.angle)]
         }
       })
     if (trainingSet.length > 0) {
-      this.network.evolve(trainingSet, {
-        // iterations: 2000,
-        // population: 20,
-        // elitism: 20,
-        error: 0.05
-      })
+      this.trainingSet = this.trainingSet.concat(trainingSet)
+      if (this.trainingSet.length > 100) {
+        const trainingResult = this.network.evolve(this.trainingSet, {
+          // iterations: 2000,
+          // population: 20,
+          // elitism: 20,
+          // cost: function(a, b) {
+          //   console.debug({ a, b })
+          //   return 0
+          // },
+          error: 0.05
+          // dropout: 0.1
+        })
+        this.trainingSet = []
+        trainingResult.then(result => {
+          this.setState({
+            errorRate: result.error
+          })
+        })
+      }
     }
+    const greenCollisions = this.state.greens.filter(coolidesWith(blue))
     const greens = this.state.greens
       .filter(doesNotCollideWith(blue))
       .filter(isWithinBoard(this.state.width, this.state.height))
@@ -292,7 +320,7 @@ export default class Game extends React.Component<{}, State> {
     this.setState({
       blue,
       greens,
-      iterations: this.state.iterations + 1,
+      iterations: this.state.iterations + greenCollisions.length,
       reds
     })
   }
@@ -347,16 +375,21 @@ export default class Game extends React.Component<{}, State> {
             backgroundColor: this.state.isGameOver ? '#FFC0CB' : '#EEE'
           }}
         >
-          <Blue x={this.state.blue.positionX} y={this.state.blue.positionY} />
-          {greenComponents}
-          {redComponents}
+          <AsyncComponent>
+            <Blue x={this.state.blue.positionX} y={this.state.blue.positionY} />
+            {greenComponents}
+            {redComponents}
+          </AsyncComponent>
         </div>
         <div style={{ fontSize: '0.8rem' }}>{this.state.iterations}</div>
+        <div style={{ fontSize: '0.8rem' }}>
+          {round(this.state.errorRate * 100)}%
+        </div>
       </div>
     )
   }
 }
 
 function createNetwork() {
-  return neataptic.architect.Random(2, 4, 1)
+  return neataptic.architect.LSTM(3, 4, 4, 1)
 }
