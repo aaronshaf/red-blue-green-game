@@ -149,10 +149,6 @@ export default class Game extends React.Component<{}, State> {
   // }
 
   process = () => {
-    const [deltaX, deltaY] = getXYFromAngleAndDistance(
-      this.state.blue.angle,
-      this.state.blue.velocity
-    )
     let blue
     if (this.state.isTraining && Math.random() < 0.1) {
       blue = {
@@ -161,6 +157,10 @@ export default class Game extends React.Component<{}, State> {
         velocity: Math.random() * MAX_BLUE_SPEED
       }
     } else {
+      const [deltaX, deltaY] = getXYFromAngleAndDistance(
+        this.state.blue.angle,
+        this.state.blue.velocity
+      )
       blue = {
         ...this.state.blue,
         positionX: clamp(
